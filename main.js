@@ -1,49 +1,83 @@
-//Graph Traversal like Maze but instead of 4 directions, use Shortest Distance
-function hop(curr, end, seen, path) {
-  //base case
-  if (
-    curr.y < 0 ||
-    curr.y > BOARD_LENGTH ||
-    curr.x < 0 ||
-    curr.x > BOARD_LENGTH
-  ) {
-    return false;
+class Vertex {
+  constructor(coord) {
+    this.position = coord;
+    this.x = coord[0];
+    this.y = coord[1];
+    this.moves = Infinity;
+    this.prev = null;
   }
-
-  if (curr.y === end.y && curr.x === end.x) {
-    path.push(end);
-    return true;
-  }
-
-  if (seen[curr.y][curr.x]) {
-    return false;
-  }
-
-  //pre
-  seen[curr.y][curr.x] = true;
-  path.push(curr);
-
-  //recurse
-  const [x, y] = dir[0];
-  if (hop({ x: curr.x + x, y: curr.y + y }, end, seen, path)) {
-    return true;
-  }
-
-  //post
-  path.pop();
 }
 
-function knightMoves(start = [0, 0], end = [4, 2]) {
-  const path = [];
-  const seen = [];
-  start = { x: start[0], y: start[1] };
-  end = { x: end[0], y: end[1] };
+function djikstraAlgorithm(start, end) {
+  const visited = [];
+  const unvisited = [];
+  start = new Vertex(start);
+  end = new Vertex(end);
 
-  for (let i = 0; i < BOARD_LENGTH; i++) {
-    seen.push(new Array(BOARD_LENGTH).fill(false));
+  start.moves = 0;
+  unvisited.push(start);
+
+  while (true) {
+    const curr = unvisited.shift();
+    visited.push(curr);
+
+    if (JSON.stringify(curr.position) === JSON.stringify(end.position)) {
+      return curr;
+    }
+    checkNeighbors(curr, visited, unvisited);
   }
+}
 
-  hop(start, end, seen, path);
+function checkNeighbors(curr, visited, unvisited) {
+  const dir = [
+    [1, 2],
+    [2, 1],
+    [2, -1],
+    [1, -2],
+    [-1, -2],
+    [-2, -1],
+    [-2, 1],
+    [-1, 2],
+  ];
+
+  for (let i = 0; i < dir.length; i++) {
+    const nextPosition = [curr.x + dir[i][0], curr.y + dir[i][1]];
+    const neighbor = new Vertex(nextPosition);
+
+    //since unweighted, first time seeing vertex will be shortest path, acting like BFS, otherwise have to refactor
+    neighbor.moves = curr.moves + VERTEX_WEIGHT;
+    neighbor.prev = curr;
+
+    if (
+      neighbor.x < 0 ||
+      neighbor.x > BOARD_LENGTH ||
+      neighbor.y < 0 ||
+      neighbor.y > BOARD_LENGTH
+    ) {
+      continue;
+    }
+
+    if (
+      visited.some(
+        (vertex) =>
+          JSON.stringify(vertex.position) === JSON.stringify(neighbor.position)
+      )
+    ) {
+      continue;
+    }
+
+    unvisited.push(neighbor);
+  }
+}
+
+function knightMoves(start, end) {
+  const path = [];
+  let endVertex = djikstraAlgorithm(start, end);
+
+  while (endVertex) {
+    path.unshift(endVertex.position);
+    endVertex = endVertex.prev;
+  }
 
   console.log(`You made it in ${path.length} moves! Here's your path:`);
   for (let i = 0; i < path.length; i++) {
@@ -51,16 +85,7 @@ function knightMoves(start = [0, 0], end = [4, 2]) {
   }
 }
 
-const dir = [
-  [2, 1],
-  [1, 2],
-  [-1, 2],
-  [-2, 1],
-  [-2, -1],
-  [-1, -2],
-  [1, -2],
-  [2, -1],
-];
 const BOARD_LENGTH = 7;
+const VERTEX_WEIGHT = 1;
 
-knightMoves();
+knightMoves([0, 0], [7, 7]);
